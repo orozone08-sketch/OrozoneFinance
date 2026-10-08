@@ -1,0 +1,91 @@
+from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Text, func
+from .db import Base
+
+class Expense(Base):
+    __tablename__ = "expenses"
+    id = Column(Integer, primary_key=True, index=True)
+    expense_date = Column(Date, nullable=False)
+    voucher_no = Column(String(50), index=True)
+    paid_by = Column(String(120), index=True)
+    category = Column(String(120), nullable=False, index=True)
+    sub_category = Column(String(120))
+    description = Column(Text)
+    vendor = Column(String(200), index=True)
+    base_amount = Column(Float, default=0)
+    gst_amount = Column(Float, default=0)
+    total_amount = Column(Float, nullable=False)
+    payment_mode = Column(String(50))
+    paid_from = Column(String(120))
+    reimbursable = Column(String(10), default="No")
+    project_issue = Column(String(120), index=True)
+    event_name = Column(String(120))
+    bill_available = Column(String(10), default="No")
+    bill_ref = Column(String(300))
+    remarks = Column(Text)
+    status = Column(String(50), default="Submitted", index=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+class Income(Base):
+    __tablename__ = "income"
+    id = Column(Integer, primary_key=True, index=True)
+    invoice_date = Column(Date, nullable=False)
+    invoice_no = Column(String(50), index=True)
+    customer = Column(String(200), nullable=False, index=True)
+    income_type = Column(String(120), nullable=False, index=True)
+    ad_type = Column(String(120))
+    magazine_issue = Column(String(120), index=True)
+    sales_person = Column(String(120))
+    base_amount = Column(Float, default=0)
+    gst_amount = Column(Float, default=0)
+    invoice_total = Column(Float, nullable=False)
+    amount_received = Column(Float, default=0)
+    due_date = Column(Date)
+    payment_mode = Column(String(50))
+    bank_name = Column(String(120))
+    status = Column(String(50), default="Invoice Raised", index=True)
+    remarks = Column(Text)
+    created_at = Column(DateTime, server_default=func.now())
+
+class Advance(Base):
+    __tablename__ = "advances"
+    id = Column(Integer, primary_key=True, index=True)
+    person_name = Column(String(150), nullable=False, index=True)
+    advance_date = Column(Date, nullable=False)
+    amount = Column(Float, nullable=False)
+    remarks = Column(Text)
+    created_at = Column(DateTime, server_default=func.now())
+
+class Party(Base):
+    __tablename__ = "parties"
+    id = Column(Integer, primary_key=True, index=True)
+    party_name = Column(String(200), nullable=False, index=True)
+    party_type = Column(String(80), index=True)
+    contact_person = Column(String(150))
+    mobile = Column(String(50))
+    email = Column(String(150))
+    gstin = Column(String(30))
+    address = Column(Text)
+    remarks = Column(Text)
+    created_at = Column(DateTime, server_default=func.now())
+
+class AdBooking(Base):
+    __tablename__ = "ad_bookings"
+    id = Column(Integer, primary_key=True, index=True)
+    booking_date = Column(Date, nullable=False)
+    customer = Column(String(200), nullable=False, index=True)
+    magazine_issue = Column(String(120), nullable=False, index=True)
+    position = Column(String(120))
+    package_name = Column(String(120))
+    rate = Column(Float, default=0)
+    discount = Column(Float, default=0)
+    final_amount = Column(Float, default=0)
+    gst_amount = Column(Float, default=0)
+    invoice_total = Column(Float, default=0)
+    artwork_received = Column(String(10), default="No")
+    artwork_approved = Column(String(10), default="No")
+    invoice_raised = Column(String(10), default="No")
+    payment_received = Column(String(10), default="No")
+    published = Column(String(10), default="No")
+    status = Column(String(50), default="Booked")
+    remarks = Column(Text)
+    created_at = Column(DateTime, server_default=func.now())
