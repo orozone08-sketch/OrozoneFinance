@@ -15,3 +15,7 @@ Verified 9 October 2026 on Orozone Cloudflare account 1a970a489b3675156722383f7c
 - Native Workers Builds connection saved for main, with non-production builds disabled. Build command and migration/deploy command documented in README.
 
 Local credentials and screenshots are in ignored .access/. They are not committed. The CI test password is disposable and only used with local simulated resources.
+
+First native Git-triggered build succeeded for commit 468180fad1641a3f4eb93aa19c85d23ff09ce7de:
+https://dash.cloudflare.com/1a970a489b3675156722383f7ce0fffd/workers/services/view/orozone-finance/production/builds/b344438a-3ed8-4131-bbf1-b8f1edb4e6aa
+Published Worker version 324b4516-d995-4731-9454-dca1371ec53a. GitHub verification run 37944127993 also passed.

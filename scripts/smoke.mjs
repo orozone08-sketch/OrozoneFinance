@@ -18,9 +18,11 @@ async function request(path, options = {}) {
 async function get(path) { const response = await request(path); assert.equal(response.status, 200, path); return response.json(); }
 async function post(path, body) { const response = await request(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); assert.equal(response.status, 200, `${path}: ${await response.clone().text()}`); return response.json(); }
 for (const path of ['/expenses', '/income', '/advances', '/parties', '/ads', '/reports/dashboard', '/reports/receivables', '/reports/issue-profitability', '/reports/reimbursements', '/features', '/attachments']) await get(path);
-const template = await request('/imports/expenses/template'); assert.equal(template.status, 200);
-const templateBook = new ExcelJS.Workbook(); await templateBook.xlsx.load(Buffer.from(await template.arrayBuffer()));
-assert.equal(templateBook.worksheets[0].getRow(1).getCell(1).value, 'expense_date');
+for (let attempt = 0; attempt < 2; attempt++) {
+  const template = await request('/imports/expenses/template'); assert.equal(template.status, 200);
+  const templateBook = new ExcelJS.Workbook(); await templateBook.xlsx.load(Buffer.from(await template.arrayBuffer()));
+  assert.equal(templateBook.worksheets[0].getRow(1).getCell(1).value, 'expense_date');
+}
 if (!remote) {
   if (!(await get('/attachments')).enabled) assert.equal((await request('/attachments', { method: 'POST' })).status, 503);
   else {
@@ -50,14 +52,18 @@ if (!remote) {
   assert.equal((await get('/reports/issue-profitability')).find(row => row.issue === tag).profit, 60);
   assert.equal((await get('/reports/reimbursements')).find(row => row.person === tag).balance, 30);
   const invalid = await request('/expenses', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expense_date: '2026-02-30', category: tag, total_amount: -1 }) }); assert.equal(invalid.status, 422);
-  async function upload(rows) {
-    const book = new ExcelJS.Workbook(); const sheet = book.addWorksheet('Expenses'); sheet.addRow(['date', 'category', 'total']); rows.forEach(row => sheet.addRow(row));
+  async function upload(rows, date1904 = false) {
+    const book = new ExcelJS.Workbook(); book.properties.date1904 = date1904; const sheet = book.addWorksheet('Expenses'); sheet.addRow(['date', 'category', 'total']); rows.forEach(row => sheet.addRow(row));
     const form = new FormData(); form.append('file', new Blob([await book.xlsx.writeBuffer()]), 'smoke.xlsx'); return request('/imports/expenses', { method: 'POST', body: form });
   }
   const count = (await get('/expenses')).length;
   const badImport = await upload([['2026-10-09', tag, 15], ['invalid-date', tag, 10]]); assert.equal(badImport.status, 422); assert.equal((await get('/expenses')).length, count, 'Invalid import must not insert its valid row');
   const goodImport = await upload([['2026-10-09', tag, 15]]); assert.equal(goodImport.status, 200, await goodImport.clone().text()); assert.equal((await goodImport.json()).imported, 1);
   assert.equal((await get('/expenses')).length, count + 1);
+  const epochCategory = `${tag}-1904`;
+  const epochImport = await upload([[new Date('2026-10-09T00:00:00Z'), epochCategory, 12]], true); assert.equal(epochImport.status, 200);
+  assert.equal((await get('/expenses')).find(row => row.category === epochCategory).expense_date, '2026-10-09', '1904 workbook dates must preserve their calendar date');
+  assert.equal((await upload([[1e300, tag, 12]])).status, 422, 'Out-of-range date serials must validate, not crash');
   for (const [name, id] of [['expenses', expense.id], ['income', income.id]]) { assert.equal((await request(`/${name}/${id}`, { method: 'DELETE' })).status, 200); assert.equal((await request(`/${name}/${id}`, { method: 'DELETE' })).status, 404); }
 }
 console.log(`PASS: ${remote ? 'read-only remote' : 'local CRUD, reports, validation, atomic Excel imports'} smoke (${base})`);

@@ -106,6 +106,7 @@ api.post('/imports/:dataset', async c => {
     const source: Record<string, unknown> = {};
     for (const [column, key] of Object.entries(headers)) {
       source[key] = row.cells[Number(column)];
+      if (sheet.date1904 && key.endsWith('_date') && typeof source[key] === 'number') source[key] = Number(source[key]) + 1462;
     }
     const result = validate(config, source, true);
     if (result.errors.length) errors.push({ row: row.row, errors: result.errors });

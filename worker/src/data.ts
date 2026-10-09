@@ -23,7 +23,7 @@ export function validate(config: Dataset, source: Record<string, unknown>, sprea
       else payload[key] = Number(value);
     } else if (key.endsWith('_date')) {
       if (spreadsheet && value instanceof Date) value = value.toISOString().slice(0, 10);
-      if (spreadsheet && typeof value === 'number') value = new Date(Date.UTC(1899, 11, 30) + value * 86400000).toISOString().slice(0, 10);
+      if (spreadsheet && typeof value === 'number' && value >= 1 && value <= 2958465) value = new Date(Date.UTC(1899, 11, 30) + value * 86400000).toISOString().slice(0, 10);
       if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value) || !Number.isFinite(Date.parse(value)) || new Date(value).toISOString().slice(0, 10) !== value) errors.push(`${key} must be a valid YYYY-MM-DD date`);
       else payload[key] = value;
     } else if (typeof value !== 'string' && !spreadsheet) errors.push(`${key} must be text`);

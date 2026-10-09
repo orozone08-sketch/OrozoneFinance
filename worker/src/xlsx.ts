@@ -3,7 +3,7 @@ import { XMLParser } from 'fast-xml-parser';
 
 // Parse cell values synchronously: stream-based Excel readers retain callbacks
 // across requests, which are incompatible with the Workers request lifecycle.
-export function readWorkbook(contents: ArrayBuffer): { headers: string[]; rows: { row: number; cells: unknown[] }[] } {
+export function readWorkbook(contents: ArrayBuffer): { date1904: boolean; headers: string[]; rows: { row: number; cells: unknown[] }[] } {
   const limit = 20 * 1024 * 1024;
   let declaredSize = 0;
   const files = unzipSync(new Uint8Array(contents), { filter: entry => {
@@ -25,7 +25,9 @@ export function readWorkbook(contents: ArrayBuffer): { headers: string[]; rows: 
   const text = (value: any): string => typeof value === 'string' ? value : value?.['#text'] ?? '';
   const richText = (value: any): string => value?.t !== undefined ? text(value.t) : array(value?.r).map(part => text(part.t)).join('');
   const shared = files['xl/sharedStrings.xml'] ? array(xml('xl/sharedStrings.xml').sst?.si).map(richText) : [];
-  const firstSheet = array(xml('xl/workbook.xml').workbook?.sheets?.sheet)[0];
+  const workbook = xml('xl/workbook.xml').workbook;
+  const date1904 = ['1', 'true'].includes(String(workbook?.workbookPr?.['@date1904']));
+  const firstSheet = array(workbook?.sheets?.sheet)[0];
   const relation = array(xml('xl/_rels/workbook.xml.rels').Relationships?.Relationship).find(item => item['@Id'] === firstSheet?.['@r:id']);
   if (!relation) throw new Error('Workbook has no first worksheet');
   const target = String(relation['@Target']);
@@ -45,5 +47,5 @@ export function readWorkbook(contents: ArrayBuffer): { headers: string[]; rows: 
     }
     return { row: Number(source['@r'] || index + 1), cells };
   });
-  return { headers: (rows.shift()?.cells || []).map(value => String(value ?? '')), rows };
+  return { date1904, headers: (rows.shift()?.cells || []).map(value => String(value ?? '')), rows };
 }
