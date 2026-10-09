@@ -1,0 +1,32 @@
+{
+  "name": "orozone-finance",
+  "private": true,
+  "version": "2.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "npm --prefix frontend run build",
+    "check": "tsc --noEmit",
+    "deploy": "npm run build && wrangler d1 migrations apply DB --remote && wrangler deploy",
+    "db:local": "wrangler d1 migrations apply DB --local",
+    "db:remote": "wrangler d1 migrations apply DB --remote",
+    "test": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0",
+    "fast-xml-parser": "^5.11.2",
+    "fflate": "^0.8.3",
+    "hono": "^4.10.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "latest",
+    "@types/node": "^26.6.4",
+    "typescript": "^5.9.3",
+    "wrangler": "4.149.0"
+  },
+  "overrides": {
+    "exceljs": {
+      "uuid": "11.1.1"
+    }
+  }
+}

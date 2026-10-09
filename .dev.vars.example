@@ -1,0 +1,2 @@
+FINANCE_PASSWORD=replace-with-local-password
+SESSION_SECRET=replace-with-long-random-local-secret

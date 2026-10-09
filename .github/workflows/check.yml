@@ -1,0 +1,36 @@
+name: Verify Cloudflare app
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+      - run: npm ci && npm ci --prefix frontend
+      - run: npm run check && npm run build
+      - name: Validate Worker bundle
+        run: npx wrangler deploy --dry-run
+      - name: Test local D1 and API
+        shell: bash
+        run: |
+          printf 'FINANCE_PASSWORD=ci-test-password\nSESSION_SECRET=ci-test-session-secret-at-least-32-characters\n' > .dev.vars
+          npm run db:local
+          npx wrangler dev --port 8787 > /tmp/worker.log 2>&1 &
+          worker_pid=$!
+          trap 'kill "$worker_pid" || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8787/api/health; then break; fi
+            sleep 1
+          done
+          FINANCE_PASSWORD=ci-test-password npm test || { cat /tmp/worker.log; exit 1; }

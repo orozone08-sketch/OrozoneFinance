@@ -1,14 +1,7 @@
 @echo off
-echo OROZONE Finance Desk setup instructions
-echo.
-echo 1. Open one CMD in backend and run:
-echo    python -m venv .venv
-echo    .venv\Scripts\activate
-echo    pip install -r requirements.txt
-echo    uvicorn app.main:app --reload
-echo.
-echo 2. Open another CMD in frontend and run:
-echo    npm install
-echo    npm run dev
-echo.
+echo OROZONE Finance Desk - Cloudflare local development
+echo Run npm ci and npm ci --prefix frontend first.
+echo Copy .dev.vars.example to .dev.vars and set local secrets.
+echo Run npm run db:local and npm run build, then npm run dev.
+echo Open http://localhost:8787
 pause

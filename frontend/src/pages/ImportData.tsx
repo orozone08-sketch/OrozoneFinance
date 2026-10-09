@@ -1,9 +1,10 @@
-import {ChangeEvent,useState} from "react";
+import {ChangeEvent,useEffect,useState} from "react";
 import {FileSpreadsheet,Download,UploadCloud,CheckCircle2,AlertCircle} from "lucide-react";
 import {api} from "../api";
 
 type DatasetKey="expenses"|"income"|"advances"|"parties"|"ads";
 type ImportResult={dataset:string;file:string;imported:number};
+type Features={imap:{enabled:boolean;message:string};attachments:{enabled:boolean;status:string}};
 
 const datasets:Record<DatasetKey,{label:string;description:string;required:string[]}>={
   expenses:{label:"Expenses",description:"Bills, reimbursements and issue-wise costs.",required:["expense_date","category","total_amount"]},
@@ -30,6 +31,12 @@ export default function ImportData(){
   const [message,setMessage]=useState("");
   const [error,setError]=useState("");
   const [result,setResult]=useState<ImportResult|null>(null);
+  const [features,setFeatures]=useState<Features|null>(null);
+  const [attachment,setAttachment]=useState<File|null>(null);
+  const [attachmentBusy,setAttachmentBusy]=useState(false);
+  const [attachmentUrl,setAttachmentUrl]=useState("");
+  const [attachmentError,setAttachmentError]=useState("");
+  useEffect(()=>{api.get<Features>("/features").then(response=>setFeatures(response.data)).catch(()=>{});},[]);
   const selected=datasets[dataset];
 
   function selectFile(event:ChangeEvent<HTMLInputElement>){
@@ -52,6 +59,16 @@ export default function ImportData(){
     }catch(error){setError(errorMessage(error));}
     finally{setBusy(false);}
   }
+  async function uploadAttachment(){
+    if(!attachment||!features?.attachments.enabled)return;
+    setAttachmentBusy(true);setAttachmentError("");setAttachmentUrl("");
+    try{
+      const body=new FormData();body.append("file",attachment);
+      const response=await api.post<{url:string}>("/attachments",body,{headers:{"Content-Type":"multipart/form-data"}});
+      setAttachmentUrl(response.data.url);setAttachment(null);
+    }catch(error){setAttachmentError((error as any)?.response?.data?.detail||"The attachment could not be uploaded. Try again.");}
+    finally{setAttachmentBusy(false);}
+  }
 
   return <>
     <div className="page-title"><div><h2>Import from Excel</h2><p>Load existing finance records into OROZONE using an Excel workbook.</p></div></div>
@@ -72,5 +89,6 @@ export default function ImportData(){
       </section>
     </div>
     <section className="card import-help"><h3>Before you upload</h3><p>Keep the column names from the template, use one record per row, and make sure required dates and amounts are filled in. The import is all-or-nothing, so a workbook with validation errors will not create partial records.</p></section>
+    {features&&<section className="card import-help"><h3>Additional import options</h3><p><strong>Mailbox import:</strong> {features.imap.message}</p><p><strong>Attachments:</strong> {features.attachments.enabled?"Upload a bill or supporting document, then copy its link into the record's bill reference or remarks.":"Waiting for R2 activation. Excel record imports remain available."}</p><label>Supporting document<input type="file" disabled={!features.attachments.enabled||attachmentBusy} onChange={event=>{setAttachment(event.target.files?.[0]||null);setAttachmentUrl("");setAttachmentError("");}}/></label><button type="button" className="secondary" disabled={!features.attachments.enabled||!attachment||attachmentBusy} onClick={uploadAttachment}>{attachmentBusy?"Uploading...":features.attachments.enabled?"Upload attachment":"Attachments pending R2"}</button>{attachmentUrl&&<p><a href={attachmentUrl} target="_blank" rel="noreferrer">Open uploaded attachment</a><br/><code>{attachmentUrl}</code></p>}{attachmentError&&<div className="import-alert error"><AlertCircle size={18}/><span>{attachmentError}</span></div>}</section>}
   </>;
 }

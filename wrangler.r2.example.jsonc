@@ -1,0 +1,2 @@
+// After activating R2, add this binding to wrangler.jsonc and create the bucket.
+{"r2_buckets":[{"binding":"ATTACHMENTS","bucket_name":"orozone-finance-attachments"}]}

@@ -1,56 +1,41 @@
-# OROZONE Finance Desk — Python + TypeScript
+# OROZONE Finance Desk
 
-Full-stack starter application for OROZONE JEWEL NEWS finance management.
+React + TypeScript finance desk served by a Hono Cloudflare Worker. D1 stores all finance records and attachment metadata. No Python server or VM is needed for production.
 
-## Stack
-- Backend: Python, FastAPI, SQLAlchemy, SQLite
-- Frontend: TypeScript, React, Vite, Axios, Recharts
-- Database can later move to PostgreSQL by changing DATABASE_URL.
+Production: https://orozone-finance.orozone08.workers.dev
 
-## Included modules
-- Dashboard
-- Expenses
-- Income
-- Advertisement Bookings
-- Advances & Reimbursements
-- Parties Master
-- Outstanding Receivables
-- Issue-wise Profitability
-- API documentation
+## Local development
 
-## Run backend
-```bash
-cd backend
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-Backend: http://127.0.0.1:8000
-API docs: http://127.0.0.1:8000/docs
+Use Node 24+. Run `npm ci`, `npm ci --prefix frontend`, copy `.dev.vars.example` to `.dev.vars` and replace both example secrets. Then run `npm run db:local`, `npm run build`, and `npm run dev`. Open http://localhost:8787 and use the local password. For frontend hot reload, run `npm --prefix frontend run dev` separately; it proxies API/auth to the Worker.
 
-## Run frontend
-Open a second terminal:
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Frontend: http://localhost:5173
+## Git flow and deployment
 
-## Production upgrades recommended
-1. Login + roles: Admin, Accounts, Sales, Staff, Viewer.
-2. PostgreSQL instead of SQLite for multi-user cloud use.
-3. Bill/PDF/image uploads with secure object storage.
-4. Payment receipt and bank reconciliation modules.
-5. GST input/output and invoice PDF generation.
-6. Automatic invoice/voucher numbering.
-7. Edit approval and audit log.
-8. Soft-delete rather than permanent delete.
-9. Excel/PDF exports.
-10. Budget vs actual and partner drawings/settlement.
-11. HTTPS, daily backups and environment secrets.
+Use feature branches and pull requests. GitHub Actions validates TypeScript, frontend build, Worker bundle, and local D1 integration tests. Cloudflare Workers Builds deploys pushes to `main`.
 
-## Note
-This is an operational finance-management MVP, not statutory accounting software. GST returns, TDS, audited books and statutory filings should remain reconciled with the official accounting system/CA.
+Build configuration:
+- Root: `/`; production branch: `main`.
+- Build: `npm ci && npm ci --prefix frontend && npm run check && npm run build`.
+- Deploy: `npx wrangler d1 migrations apply DB --remote && npx wrangler deploy`.
+- Disable non-production branch deployments to isolate production D1.
+
+Account `1a970a489b3675156722383f7ce0fffd`, Worker `orozone-finance`, D1 binding `DB` / database `orozone-finance`.
+
+Runtime secrets `FINANCE_PASSWORD` and `SESSION_SECRET` are stored in Cloudflare. Initial access details are in ignored local `.access/credentials.txt`. Shared password access uses an eight-hour signed HttpOnly cookie, origin validation, and Cloudflare login rate limiting. Sign out is in the sidebar. No secrets are committed or embedded in frontend bundles.
+
+Manual deploy: `npm run deploy`. Configure secrets with `npx wrangler secret put FINANCE_PASSWORD` and `npx wrangler secret put SESSION_SECRET`. Rotating the session secret invalidates sessions. Local tests: `npm test` while Worker runs. Read-only production checks: set `WORKER_URL` to the live URL and run `node scripts/smoke.mjs --remote`, supplying `FINANCE_PASSWORD` or using ignored local credentials.
+
+Migrations are append-only. Roll back code using Cloudflare Deployments or a reverted commit; preserve D1. D1 Time Travel is the data recovery path. Original Python backend remains under `backend/` for reference and is not deployed. No existing source database was provided; production starts empty. Import existing records through Excel.
+
+## R2 activation later
+
+R2 is intentionally unbound. Attachment API, private retrieval, D1 metadata, and frontend upload controls are prepared; uploads stay disabled until binding exists.
+
+After activating R2 in Orozone's account, run `npx wrangler r2 bucket create orozone-finance-attachments`. Add the `r2_buckets` field from `wrangler.r2.example.jsonc` to `wrangler.jsonc`, commit and push `main`. Binding `ATTACHMENTS` enables upload automatically. Files remain private behind login. Copy uploaded reference into a bill reference or remarks. Verify production upload/retrieval after activation. No public bucket is needed.
+
+## IMAP
+
+Placeholder by request: no mailbox connection or background polling. Excel imports work independently. When ready, specify provider and ingestion behavior; forwarding selected mail through Cloudflare Email Routing could avoid a persistent IMAP poller.
+
+## Modules and imports
+
+Dashboard, expenses, income, ad bookings, advances, parties, receivables, issue profitability, reimbursements, Excel imports/templates. Imports are limited to 500 rows/5MB and insert nothing if any row fails validation. This operational desk does not replace statutory accounting.

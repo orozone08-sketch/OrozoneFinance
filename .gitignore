@@ -218,3 +218,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Cloudflare / Node / private access
+node_modules/
+.wrangler/
+.dev.vars*
+!.dev.vars.example
+.access/
+*.db

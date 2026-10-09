@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "orozone-finance",
+  "main": "worker/src/index.ts",
+  "account_id": "1a970a489b3675156722383f7ce0fffd",
+  "compatibility_date": "2026-10-09",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {"directory":"frontend/dist","binding":"ASSETS","not_found_handling":"single-page-application","run_worker_first":true},
+  "d1_databases": [{"binding":"DB","database_name":"orozone-finance","database_id":"e77fd9b2-6ef8-4ea1-aaa1-d195e460fd21","migrations_dir":"worker/migrations"}],
+  "ratelimits": [{"name":"LOGIN_LIMITER","namespace_id":"340901","simple":{"limit":10,"period":60}}],
+  "observability": {"enabled":true}
+}
