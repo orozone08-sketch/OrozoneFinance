@@ -32,3 +32,13 @@ Tracks customer, issue, ad position, package, rate, discount, final amount, GST,
 
 ## Suggested V2 database tables
 users, roles, permissions, attachments, payments, bank_accounts, audit_logs, budgets, partner_drawings, financial_years, invoice_sequences, gst_rates.
+
+## Cloudflare production runtime
+
+Browser -> Hono Worker (signed-session access gate) -> D1. The same Worker serves the React frontend as static assets. Login attempts use Cloudflare's native rate limiter. Finance routes are under /api; read/write requests require a server-side session. No browser database credentials exist.
+
+Excel uploads are validated and parsed synchronously from ZIP/XML, then inserted in one D1 batch. This avoids stream callbacks crossing Worker request lifetimes. Templates remain .xlsx files. A failed workbook inserts no rows.
+
+Optional attachments: authenticated upload -> private R2 object -> D1 metadata; metadata failures remove the newly uploaded object. R2 is unbound until activation. IMAP is a placeholder; no credentials, polling, or cron trigger is configured.
+
+Native Workers Builds is connected to orozone08-sketch/OrozoneFinance, production branch main. Preview builds are disabled. The build runs TypeScript and the frontend build; deploy applies append-only D1 migrations before publishing the Worker. GitHub Actions separately exercises local D1 integration checks on pushes and pull requests.
